@@ -107,4 +107,33 @@ export default class PermissionRepository extends Repository implements IPermiss
 
 	}
 
+	async insert(member: Permission, transactionId?: string): Promise<string> {
+
+		let params = {
+			id: member.id,
+			scope: member.scope,
+			createdAt: member.createdAt,
+			updatedAt: member.updatedAt
+		}
+		let types = {
+			id: 'string',
+			scope: 'string',
+			createdAt: 'timestamp',
+			updatedAt: 'timestamp'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `INSERT INTO permissions (id, scope, created_at, updated_at) VALUES (@id, @scope, @createdAt, @updatedAt) RETURNING id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.shift()?.toJSON().id
+
+	}
+
 }
