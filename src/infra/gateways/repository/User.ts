@@ -147,4 +147,31 @@ export default class UserRepository extends Repository implements IUserRepositor
 
 	}
 
+	async has({
+		login
+	}: {
+		login: string
+	}, transactionId?: string): Promise<boolean> {
+
+		let params = {
+			login: new Login(login).toString()
+		}
+		let types = {
+			login: 'string'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM users WHERE login = @login`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 1
+
+	}
+
 }
