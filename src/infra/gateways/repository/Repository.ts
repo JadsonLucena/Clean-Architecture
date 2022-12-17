@@ -107,4 +107,38 @@ export default abstract class Repository implements IRepository {
 
 	}
 
+	rollback(id: string) {
+
+		new Promise<void>((resolve, reject) => {
+
+			try {
+
+				this.transactions[id].rollback((err: any) => {
+
+					if (err) {
+
+						return reject(err)
+
+					}
+
+					delete this.transactions[id]
+
+					resolve()
+
+				})
+
+			} catch(err: any) {
+
+				reject(err)
+
+			}
+
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+	}
+
 }
