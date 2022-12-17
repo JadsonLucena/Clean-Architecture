@@ -155,4 +155,37 @@ export default class ProjectRepository extends Repository implements IProjectRep
 
 	}
 
+	async insert(project: Project, transactionId?: string): Promise<string> {
+
+		let params = {
+			id: project.id,
+			name: project.name,
+			thumb: project.thumb,
+			createdBy: project.createdBy,
+			createdAt: project.createdAt,
+			updatedAt: project.updatedAt
+		}
+		let types = {
+			id: 'string',
+			name: 'string',
+			thumb: 'string',
+			createdBy: 'string',
+			createdAt: 'timestamp',
+			updatedAt: 'timestamp'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `INSERT INTO projects (id, name, thumb, created_by, created_at, updated_at) VALUES (@id, @name, @thumb, @createdBy, @createdAt, @updatedAt) RETURNING id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.shift()?.toJSON().id
+
+	}
+
 }
