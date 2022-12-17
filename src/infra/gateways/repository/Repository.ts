@@ -95,4 +95,16 @@ export default abstract class Repository implements IRepository {
 
 	}
 
+	async commit(id: string) {
+
+		await this.transactions[id].commit().catch((err: any) => {
+
+			throw err
+
+		})
+
+		delete this.transactions[id]
+
+	}
+
 }
