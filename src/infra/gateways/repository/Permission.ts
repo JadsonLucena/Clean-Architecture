@@ -136,4 +136,33 @@ export default class PermissionRepository extends Repository implements IPermiss
 
 	}
 
+	async update(member: Permission, transactionId?: string): Promise<boolean> {
+
+		throw new Error('Method Not Allowed')
+
+		/*let params: { [k: string]: any } = {
+			id: member.id,
+			scope: member.scope,
+			updatedAt: member.updatedAt || new Date().toISOString()
+		}
+		let types: { [k: string]: any } = {
+			id: 'string',
+			scope: 'string',
+			updatedAt: 'timestamp'
+		}
+		let sql = [
+			`scope = @scope`,
+			`updated_at = @updatedAt`
+		]
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({ sql: `UPDATE permissions SET ${sql.join(', ')} WHERE id = @id`, params, types }).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 0*/
+
+	}
+
 }
