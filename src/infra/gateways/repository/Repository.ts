@@ -141,4 +141,21 @@ export default abstract class Repository implements IRepository {
 
 	}
 
+	async close() {
+
+		for (let id in this.transactions) {
+
+			this.transactions[id].end()
+			delete this.transactions[id]
+
+		}
+
+		await this.database.close().catch((err: any) => {
+
+			throw err
+
+		})
+
+	}
+
 }
