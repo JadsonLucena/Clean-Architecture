@@ -211,4 +211,72 @@ export default class UserRepository extends Repository implements IUserRepositor
 
 	}
 
+	async update(user: User, transactionId?: string): Promise<boolean> {
+
+		let set = [
+			`name = @name`,
+			`phone = @phone`,
+			`email = @email`,
+			`password = @password`,
+			`tfa = @tfa`,
+			`updated_at = @updatedAt`
+		]
+
+		let params: { [k: string]: any } = {
+			id: user.id,
+			name: user.name,
+			phone: user.phone,
+			email: user.email,
+			password: user.password,
+			tfa: user.tfa,
+			updatedAt: user.updatedAt
+		}
+		let types: { [k: string]: any } = {
+			id: 'string',
+			name: 'string',
+			phone: 'string',
+			email: 'string',
+			password: 'string',
+			tfa: 'bool',
+			updatedAt: 'timestamp'
+		}
+
+		if (user.confirmedAt) {
+
+			set.push(`confirmed_at = @confirmedAt`)
+			params.confirmedAt = user.confirmedAt
+			types.confirmedAt = 'timestamp'
+
+		} else {
+
+			set.push(`confirmed_at = null`)
+
+		}
+
+		if (user.deletedAt) {
+
+			set.push(`deleted_at = @deletedAt`)
+			params.deletedAt = user.deletedAt
+			types.deletedAt = 'timestamp'
+
+		} else {
+
+			set.push(`deleted_at = null`)
+
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `UPDATE users SET ${set.join(', ')} WHERE id = @id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 0
+
+	}
+
 }
