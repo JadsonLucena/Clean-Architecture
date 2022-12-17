@@ -188,4 +188,56 @@ export default class ProjectRepository extends Repository implements IProjectRep
 
 	}
 
+	async update(project: Project, transactionId?: string): Promise<boolean> {
+
+		let set = [
+			`name = @name`,
+			`updated_at = @updatedAt`
+		]
+
+		let params: { [k: string]: any } = {
+			id: project.id,
+			name: project.name,
+			updatedAt: project.updatedAt
+		}
+		let types: { [k: string]: any } = {
+			id: 'string',
+			name: 'string',
+			updatedAt: 'timestamp'
+		}
+
+		if (project.thumb) {
+
+			set.push(`thumb = @thumb`)
+			params.thumb = project.thumb
+			types.thumb = 'string'
+
+		}
+
+		if (project.deletedAt) {
+
+			set.push(`deleted_at = @deletedAt`)
+			params.deletedAt = project.deletedAt
+			types.deletedAt = 'timestamp'
+
+		} else {
+
+			set.push(`deleted_at = null`)
+
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `UPDATE projects SET ${set.join(', ')} WHERE id = @id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 0
+
+	}
+
 }
