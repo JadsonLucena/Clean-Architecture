@@ -80,4 +80,31 @@ export default class PermissionRepository extends Repository implements IPermiss
 
 	}
 
+	async has({
+		scope
+	}: {
+		scope: string
+	}, transactionId?: string): Promise<boolean> {
+
+		let params = {
+			scope: new Scope(scope).toString()
+		}
+		let types = {
+			scope: 'string'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM permissions WHERE scope = @scope`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 1
+
+	}
+
 }
