@@ -30,4 +30,54 @@ export default class PermissionRepository extends Repository implements IPermiss
 
 	}
 
+	async find({
+		id,
+		scope
+	}: {
+		id?: string,
+		scope?: string
+	}, transactionId?: string): Promise<Permission[]> {
+
+		let tables = [`permissions`]
+		let where: string[] = []
+
+		let params: {
+			id?: string,
+			scope?: string
+		} = {}
+		let types: {
+			id?: 'string',
+			scope?: 'string'
+		} = {}
+
+		if (id) {
+
+			where.push(`id = @id`)
+			params.id = new UUID(id).toString()
+			types.id = 'string'
+
+		}
+
+		if (scope) {
+
+			where.push(`scope = @scope`)
+			params.scope = new Scope(scope).toString()
+			types.scope = 'string'
+
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM ${tables.join(`, `)} ${where.length ? `WHERE ${where.join(` AND `)}` : ''}`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.map((row: any) => new Permission(row.toJSON()))
+
+	}
+
 }
