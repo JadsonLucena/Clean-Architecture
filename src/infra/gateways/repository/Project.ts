@@ -122,4 +122,37 @@ export default class ProjectRepository extends Repository implements IProjectRep
 
 	}
 
+	async has({
+		name,
+		createdBy
+	}: {
+		name: string,
+		createdBy: string
+	}, transactionId?: string): Promise<boolean> {
+
+		let params = {
+			name: new Name(name, {
+				minAmountOfLastNames: 0
+			}).toString(),
+			createdBy: new UUID(createdBy).toString()
+		}
+		let types = {
+			name: 'string',
+			createdBy: 'string'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM roles WHERE name = @name AND created_by = @createdBy`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 1
+
+	}
+
 }
