@@ -174,4 +174,41 @@ export default class UserRepository extends Repository implements IUserRepositor
 
 	}
 
+	async insert(user: User, transactionId?: string): Promise<string> {
+
+		let params = {
+			id: user.id,
+			name: user.name,
+			phone: user.phone,
+			email: user.email,
+			login: user.login,
+			password: user.password,
+			createdAt: user.createdAt,
+			updatedAt: user.updatedAt
+		}
+		let types = {
+			id: 'string',
+			name: 'string',
+			phone: 'string',
+			email: 'string',
+			login: 'string',
+			password: 'string',
+			createdAt: 'timestamp',
+			updatedAt: 'timestamp'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `INSERT INTO users (id, name, phone, email, login, password, created_at, updated_at) VALUES (@id, @name, @phone, @email, @login, @password, @createdAt, @updatedAt) RETURNING id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.shift()?.toJSON().id
+
+	}
+
 }
