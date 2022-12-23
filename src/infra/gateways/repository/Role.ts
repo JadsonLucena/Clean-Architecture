@@ -258,4 +258,121 @@ export default class RoleRepository extends Repository implements IRoleRepositor
 
 	}
 
+	async update(role: Role, transactionId?: string): Promise<boolean> {
+
+		let set = [
+			`id = @id`,
+			`name = @name`,
+			`updated_at = @updatedAt`
+		]
+
+		let params = {
+			id: role.id,
+			name: role.name,
+			updatedAt: role.updatedAt
+		}
+		let types = {
+			id: 'string',
+			name: 'string',
+			updatedAt: 'timestamp'
+		}
+
+		let internalTransactionId = transactionId || await this.transaction()
+
+		try {
+
+			const [ roleRows, roleState, roleMetadata ] = await this.transactions[internalTransactionId].run({
+				sql: `UPDATE roles SET ${set.join(', ')} WHERE id = @id`,
+				params,
+				types
+			}).catch((err: any) => {
+
+				throw err
+
+			})
+
+			const [ permissionRows, permissionState, permissionMetadata ] = await this.transactions[internalTransactionId].run({
+				sql: `SELECT permissions.id FROM permissions, acl WHERE permissions.id = acl.permission_id AND acl.role_id = roles.id AND roles.id = @id`,
+				params: {
+					id: role.id
+				},
+				types: {
+					id: 'string'
+				}
+			}).catch((err: any) => {
+
+				throw err
+
+			})
+
+			let permissionIdList = permissionRows.map((permissions: any) => permissions.id)
+			
+			let permissionToAdd = role.permissions.filter(id => !permissionIdList.includes(id))
+			let permissionToRemove = permissionIdList.filter((id: string) => !role.permissions.includes(id))
+
+			for (let permissionId of permissionToAdd) {
+
+				await this.transactions[internalTransactionId].run({
+					sql: `INSERT INTO acl (role_id, permission_id, created_by, created_at) VALUES (@roleId, @permissionId, @createdBy, @createdAt)`,
+					params: {
+						roleId: role.id,
+						permissionId,
+						createdBy: role.createdBy,
+						createdAt: role.createdAt
+					},
+					types: {
+						roleId: 'string',
+						permissionId: 'string',
+						createdBy: 'string',
+						createdAt: 'timestamp'
+					}
+				}).catch((err: any) => {
+
+					throw err
+
+				})
+
+			}
+
+			if (permissionToRemove.length) {
+
+				await (transactionId ? this.transactions[transactionId] : this.database).run({
+					sql: `DELETE FROM acl WHERE role_id = @roleId AND permission_id IN (@permissions)`,
+					params: {
+						roleId: role.id,
+						permissions: permissionToRemove,
+					},
+					types: {
+						roleId: 'string',
+						permissions: {
+							type: 'array',
+							child: {
+								type: 'string'
+							}
+						}
+					}
+				}).catch((err: any) => {
+
+					throw err
+
+				})
+
+			}
+
+			return roleRows.length > 0
+
+		} catch(err) {
+
+			if (!transactionId) {
+
+				this.rollback(internalTransactionId)
+
+			}
+
+			throw err
+
+		}
+
+	}
+
 }
