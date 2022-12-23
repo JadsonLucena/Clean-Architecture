@@ -195,4 +195,48 @@ export default class MemberRepository extends Repository implements IMemberRepos
 
 	}
 
+	async update(member: Member, transactionId?: string): Promise<boolean> {
+
+		let set = [
+			`role_id = @roleId`,
+			`updated_at = @updatedAt`
+		]
+
+		let params: { [k: string]: any } = {
+			id: member.id,
+			roleId: member.roleId,
+			updatedAt: member.updatedAt
+		}
+		let types: { [k: string]: any } = {
+			id: 'string',
+			roleId: 'string',
+			updatedAt: 'timestamp'
+		}
+
+		if (member.confirmedAt) {
+
+			set.push(`confirmed_at = @confirmedAt`)
+			params.confirmedAt = member.confirmedAt
+			types.confirmedAt = 'timestamp'
+
+		} else {
+
+			set.push(`confirmed_at = null`)
+
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `UPDATE members SET ${set.join(', ')} WHERE id = @id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 0
+
+	}
+
 }
