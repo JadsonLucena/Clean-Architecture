@@ -129,4 +129,35 @@ export default class MemberRepository extends Repository implements IMemberRepos
 
 	}
 
+	async has({
+		projectId,
+		userId
+	}: {
+		projectId: string,
+		userId: string
+	}, transactionId?: string): Promise<boolean> {
+
+		let params = {
+			projectId: new UUID(projectId).toString(),
+			userId: new UUID(userId).toString()
+		}
+		let types = {
+			projectId: 'string',
+			userId: 'string'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM members WHERE project_id = @projectId AND user_id = @userId`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 1
+
+	}
+
 }
