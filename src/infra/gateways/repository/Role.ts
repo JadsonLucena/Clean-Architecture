@@ -146,4 +146,37 @@ export default class RoleRepository extends Repository implements IRoleRepositor
 
 	}
 
+	async has({
+		name,
+		projectId
+	}: {
+		name: string,
+		projectId: string
+	}, transactionId?: string): Promise<boolean> {
+
+		let params = {
+			name: new Name(name, {
+				minAmountOfLastNames: 0
+			}).toString(),
+			projectId: new UUID(projectId).toString()
+		}
+		let types = {
+			name: 'string',
+			projectId: 'string'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `SELECT * FROM roles WHERE name = @name AND project_id = @projectId`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 1
+
+	}
+
 }
