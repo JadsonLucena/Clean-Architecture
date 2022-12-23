@@ -179,4 +179,83 @@ export default class RoleRepository extends Repository implements IRoleRepositor
 
 	}
 
+	async insert(role: Role, transactionId?: string): Promise<string> {
+
+		let params = {
+			id: role.id,
+			name: role.name,
+			projectId: role.projectId,
+			createdBy: role.createdBy,
+			createdAt: role.createdAt,
+			updatedAt: role.updatedAt
+		}
+		let types = {
+			id: 'string',
+			name: 'string',
+			projectId: 'string',
+			createdBy: 'string',
+			createdAt: 'timestamp',
+			updatedAt: 'timestamp'
+		}
+
+
+		let internalTransactionId = transactionId || await this.transaction()
+
+
+		try {
+
+			const [ rows, state, metadata ] = await this.transactions[internalTransactionId].run({
+				sql: `INSERT INTO roles (id, name, project_id, created_by, created_at, updated_at) VALUES (@id, @name, @projectId, @createdBy, @createdAt, @updatedAt) RETURNING id`,
+				params,
+				types
+			}).catch((err: any) => {
+
+				throw err
+
+			})
+
+			const roleId = rows.shift()?.toJSON().id
+
+
+			for (let permissionId of (role.permissions || [])) {
+
+				await this.transactions[internalTransactionId].run({
+					sql: `INSERT INTO acl (role_id, permission_id, created_by, created_at) VALUES (@roleId, @permissionId, @createdBy, @createdAt)`,
+					params: {
+						roleId,
+						permissionId,
+						createdBy: role.createdBy,
+						createdAt: role.createdAt
+					},
+					types: {
+						roleId: 'string',
+						permissionId: 'string',
+						createdBy: 'string',
+						createdAt: 'timestamp'
+					}
+				}).catch((err: any) => {
+
+					throw err
+
+				})
+
+			}
+
+
+			return roleId
+
+		} catch(err) {
+
+			if (!transactionId) {
+
+				this.rollback(internalTransactionId)
+
+			}
+
+			throw err
+
+		}
+
+	}
+
 }
