@@ -160,4 +160,39 @@ export default class MemberRepository extends Repository implements IMemberRepos
 
 	}
 
+	async insert(member: Member, transactionId?: string): Promise<string> {
+
+		let params = {
+			id: member.id,
+			projectId: member.projectId,
+			userId: member.userId,
+			roleId: member.roleId,
+			createdBy: member.createdBy,
+			createdAt: member.createdAt,
+			updatedAt: member.updatedAt
+		}
+		let types = {
+			id: 'string',
+			projectId: 'string',
+			userId: 'string',
+			roleId: 'string',
+			createdBy: 'string',
+			createdAt: 'timestamp',
+			updatedAt: 'timestamp'
+		}
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `INSERT INTO members (id, project_id, user_id, role_id, created_by, created_at, updated_at) VALUES (@id, @projectId, @userId, @roleId, @createdBy, @createdAt, @updatedAt) RETURNING id`,
+			params,
+			types
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.shift()?.toJSON().id
+
+	}
+
 }
