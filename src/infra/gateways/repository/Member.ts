@@ -239,4 +239,24 @@ export default class MemberRepository extends Repository implements IMemberRepos
 
 	}
 
+	async delete(id: string, transactionId?: string): Promise<boolean> {
+
+		const [ rows, state, metadata ] = await (transactionId ? this.transactions[transactionId] : this.database).run({
+			sql: `DELETE FROM members WHERE id = @id`,
+			params: {
+				id: new UUID(id).toString()
+			},
+			types: {
+				id: 'string'
+			}
+		}).catch((err: any) => {
+
+			throw err
+
+		})
+
+		return rows.length > 0
+
+	}
+
 }
